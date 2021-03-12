@@ -3,89 +3,171 @@
 using namespace std;
 #define OK 1
 #define ERROR 0
-#define WordMax 30
-typedef int Status;
-typedef struct{
+#define WordMaxLength 30
+#define WordMaxNum 5000
+#define LIST_INIT_SIZE 100
+#define LISTINCREMENT 10
+typedef struct{//µ¥´Ê 
 	char *field;//×Ö¶ÎÊı×éÖ¸Õë 
 	int num;//×ÖÆµ	
 }Word;
-//ÏßĞÔ±íµ¥Ôª 
-#define LIST_INIT_SIZE 100
-#define LISTINCREMENT 10
-//Ë³Ğò±í 
 typedef struct{//Ë³Ğò±í 
 	Word *elem;
 	int length;//µ±Ç°³¤¶È 
 	int listsize;//×î´ó³¤¶È 
 }SqList;
-typedef struct node{//Á´±í 
+typedef struct LNode{//Á´±í 
 	Word data;
-	struct node *next;
+	struct LNode *next;
 }LNode,*LinkList;
 typedef struct BiTNode{//¶ş²æÊ÷ 
 	Word data;
 	struct BiTNode *lchild,*rchild;
 }BiTNode,*BiTree;
-//Ö÷¹¦ÄÜÄ£¿é
-Status InitList(SqList &S){//³õÊ¼»¯Ë³Ğò±í 
+typedef struct{//»ùÓÚ¿ª·ÅµØÖ··¨µÄ¹şÏ£±í 
+	Word *elem;//»ù±í 
+	int number;//Ê¹ÓÃ¸öÊı ´Ë´¦Î´Éèspace¿Õ¼ä´óĞ¡Öµ£¬ÊÇÒòÎªÊ¹ÓÃËã·¨²»»á²úÉú¿Õ¼ä²»×ãµÄÇé¿ö
+}Table;   
+void InitSqList(SqList &S){//³õÊ¼»¯Ë³Ğò±í 
 	S.elem=(Word *)malloc(LIST_INIT_SIZE*sizeof(Word));
 	if(!S.elem)exit(OVERFLOW);
 	S.length=0;
 	S.listsize=LIST_INIT_SIZE;
-	return OK;
 }
-Status InitLinkList(LinkList &L){ //³õÊ¼»¯µ¥Á´±í
+void InitLinkList(LinkList &L){ //³õÊ¼»¯µ¥Á´±í
 	L=(LinkList)malloc(sizeof(LNode));
-	if(!L)return ERROR;
+	if(!L)exit(OVERFLOW);
 	L->next=NULL; 
-	return OK;
 }
-Status BiTreeInsert(BiTree &T,Word *Array,int base,int top){//Ïò¶ş²æÊ÷ÅÅĞòÊ÷ÖĞ²åÈëÔªËØ 
+void BiTreeInsert(BiTree &T,Word *Array,int base,int top){//Ïò¶ş²æÊ÷ÅÅĞòÊ÷ÖĞ²åÈëÔªËØ 
 	if(top>=base){
 		T=(BiTree)malloc(sizeof(BiTNode));
-		int median=(base+top)/2,length=0;
-		for(length=0;Array[median].field[length];length++);//¼ÆËãµ¥´Ê³¤¶È
-		T->data.field=(char *)malloc((length+1)*sizeof(char));
+		int median=(base+top)/2;
+		T->data.field=(char *)malloc((strlen(Array[median].field)+1)*sizeof(char));
 		strcpy(T->data.field,Array[median].field);
-		T->lchild=NULL;T->rchild=NULL;
+		T->data.num=Array[median].num;
+		T->lchild=T->rchild=NULL;
 		BiTreeInsert(T->lchild,Array,base,median-1);//´´½¨×óÖ§Ê÷ 
 		BiTreeInsert(T->rchild,Array,median+1,top); //´´½¨ÓÒÖ§Ê÷ 
 	}
 }
-Status CreateBiTree(BiTree &T){//´´½¨¶ş²æÊ÷ÅÅĞòÊ÷,´´½¨WordÊı×é 
-	
+void InitBiTree(SqList &S,BiTree &T){//´´½¨¶ş²æÊ÷ÅÅĞòÊ÷,´´½¨WordÊı×é 
+	Word Array[S.length];
+	for(int i=0;i<S.length;i++){
+		Array[i].field=S.elem[i].field;
+		Array[i].num=S.elem[i].num;
+	}
+	BiTreeInsert(T,Array,0,S.length-1); 
 }
-Status ListInsert(SqList &S,char *wordarray,int length){//Ë³Ğò±í²åÈëÔªËØ 
+int Hash(Table &B,char *wordarray){//¹şÏ£º¯Êı 
+	int hashvalue=0;
+	for(int i=0;wordarray[i];i++)hashvalue+=wordarray[i];
+	hashvalue%=B.number;
+	return hashvalue;
+}
+void TableInsert(Table &B,char *wordarray,int num){//Ïò¹şÏ£±íÖĞ²åÈëµ¥´Ê 
+	int hashvalue=Hash(B,wordarray);
+	if(!B.elem[hashvalue].field){//Î´·¢Éú³åÍ» 
+		B.elem[hashvalue].field=(char *)malloc((strlen(wordarray)+1)*sizeof(char));
+		strcpy(B.elem[hashvalue].field,wordarray);
+		B.elem[hashvalue].num=num;
+	}else{
+		
+	}
+}
+void InitTable(SqList &S,Table &B){////½èÖúWordÊı×éÉú³ÉÒ»¸ö¸ÕºÃÎªµ¥´ÊÊıÁ¿µÄ¹şÏ£±í£¬¿Õ¼ä¸ÕºÃÂú×ã 
+	B.elem=(Word *)malloc(S.length*sizeof(Word));
+	if(!B.elem)exit(OVERFLOW);
+	B.number=S.length;//µ¥´ÊÊıÁ¿ 
+	for(int i=0;i<B.number;i++)B.elem[i].field=NULL;//³õÊ¼»¯£¬±ãÓÚ¼ì²âÊÇ·ñ·¢Éú³åÍ» 
+}
+void SqListInsert(SqList &S,char *wordarray,int length){//Ë³Ğò±í²åÈëÔªËØ 
 	Word *p;
 	if(S.length>=S.listsize){
 		Word *newbase;
 		newbase=(Word *)realloc(S.elem,(S.listsize+LISTINCREMENT)*sizeof(Word));
 		if(!newbase)
-			return ERROR;
+			exit(OVERFLOW);
 		S.elem=newbase;
 		S.listsize +=LISTINCREMENT;
 	}
 	for(int i=0;i<S.length;i++)//ËÑË÷ÅĞ¶ÏÊÇ·ñ´æÔÚÏàÍ¬µÄµ¥´Ê 
 		if(!strcmp(S.elem[i].field,wordarray)){
 			S.elem[i].num++;
-			return OK;
+			return;
 		}
 	S.elem[S.length].field=(char *)malloc((length+1)*sizeof(char));
 	strcpy(S.elem[S.length].field,wordarray);
 	S.elem[S.length].num=1;
 	S.length++;
-	return OK;
 }
-Status DestroyList(SqList &S){//ÊÍ·ÅË³Ğò±í 
+void BiTNodeDisp(BiTree &T){//Êä³ö¶ş²æÅÅĞòÊ÷½Úµã£¬°´ÕÕÖĞĞòÊÇË³ĞòÊä³öµÄ
+	if(T){ 
+		BiTNodeDisp(T->lchild);//×óÖ§Ê÷ 
+		FILE *Outfile;
+		Outfile=fopen("Outfile4.txt","a");//²ÉÓÃ×·¼ÓµÄ·½Ê½ 
+		fprintf(Outfile,"%s  %d\n",T->data.field,T->data.num);
+		fclose(Outfile);
+		BiTNodeDisp(T->rchild);//ÓÒÖ§Ê÷ 
+	}
+}
+int BiTNodeCount(BiTree &T){//¼ÆËã¶ş²æÅÅĞòÊ÷µÄ½ÚµãÊıÁ¿£¬ÓÃÓÚ´ÊÆµÍ³¼Æ 
+	if(T)return BiTNodeCount(T->lchild)+BiTNodeCount(T->rchild)+1;
+		else return 0;
+}
+void DispFileBiTree(BiTree &T){//Êä³öÅÅĞòÊ÷ 
+	FILE *Outfile;
+	Outfile=fopen("Outfile4.txt","w");
+	fprintf(Outfile,"%d\n",BiTNodeCount(T));//Ğ´ÎÄ¼şÍ· 
+	fclose(Outfile);
+	BiTNodeDisp(T);//Êä³öĞ´ÎÄ¼şÌå 
+}
+int BiTNodeFind(BiTree &T,char *wordarray){//¶ş²æÅÅĞòÊ÷¶ÔÓÚ½áµãµÄ²éÕÒ
+	if(T){
+		int result=strcmp(T->data.field,wordarray);
+		if(result==0)return T->data.num;
+		else if(result>0)return BiTNodeFind(T->lchild,wordarray);//T.data->field<wordarray½ø×óÖ§Ê÷ 
+			else return BiTNodeFind(T->rchild,wordarray); 
+	}else return 0; 
+} 
+int BiTreeASL(BiTree &T,int depth){
+	if(T){
+		return BiTreeASL(T->lchild,depth+1)+BiTreeASL(T->rchild,depth+1)+depth;
+	}else return 0;
+} 
+void FindSuccess(int num,double time,double asl){
+	printf("´Ëµ¥´ÊµÄ×ÖÆµÎª£º%d\n",num);
+	printf("²éÕÒ¸Ãµ¥´ÊËù»¨µÄÊ±¼ä£º%.2lf\n",time);
+	printf("Æ½¾ù²éÕÒ³¤¶È£º%.1lf\n",asl); 
+}
+void FindWordBiTree(BiTree &T){//¶ş²æÅÅĞòÊ÷²éÕÒ 
+	char wordarray[WordMaxLength];
+	fflush(stdin);
+	printf("ÇëÊäÈë´ı²éÕÒµÄµ¥´Ê£º"); 
+	gets(wordarray);
+	_LARGE_INTEGER time_start,time_end;//¿ªÊ¼Ê±¼äÓë½áÊøÊ±¼ä 
+	double dqFreq;LARGE_INTEGER f;//¼ÆÊ±Æ÷ÆµÂÊ
+	QueryPerformanceFrequency(&f);
+	dqFreq=(double)f.QuadPart;
+	QueryPerformanceCounter(&time_start);//¼ÆÊ±¿ªÊ¼
+	int num;
+	num=BiTNodeFind(T,wordarray);
+	QueryPerformanceCounter(&time_end);//¼ÆÊ±½áÊø
+	if(num){
+		FindSuccess(num,1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq,(double)BiTreeASL(T,1)/BiTNodeCount(T));
+	}else{
+		printf("²éÕÒÊ§°Ü\n");
+	}
+}
+void DestroySqList(SqList &S){//ÊÍ·ÅË³Ğò±í 
 	for(int i=0;i<S.length;i++)
 		free(S.elem[i].field);
 	free(S.elem);
 	S.elem=NULL;
 	S.length=0;
 	S.listsize=0;
-	return OK;
 }
-Status DestroyLinkList(LinkList &L){//ÊÍ·ÅÁ´±í 
+void DestroyLinkList(LinkList &L){//ÊÍ·ÅÁ´±í 
 	LinkList p=L,q=p->next;
 	while(q){
 		if(p->data.field)free(p->data.field);
@@ -95,7 +177,15 @@ Status DestroyLinkList(LinkList &L){//ÊÍ·ÅÁ´±í
 		q=p->next;
 	}
 	L=NULL;
-	return OK;
+}
+void DestoryBiTree(BiTree &T){//ÊÍ·Å¶ş²æÅÅĞòÊ÷ 
+	if(T){
+		DestoryBiTree(T->lchild);
+		DestoryBiTree(T->rchild);//ºóĞòÊÍ·Å 
+		free(T->data.field);
+		free(T);
+		T=NULL; 
+	} 
 }
 //Ö÷ÈÎÎñµ¥Ôª 
 int Partition(Word *(*array),int low,int high)//¿ìËÙÅÅĞò¸ü»»Î»ÖÃ 
@@ -132,7 +222,7 @@ void SimpleSort(LinkList &L){//Á´±í¼òµ¥Ñ¡ÔñÅÅĞò£¬ÖØÏÖµÚÊ®ÕÂÅÅĞòËã·¨¶ş,½«Ñ¡ÔñÅÅĞò
 		}		
 	} 
 } 
-void ListSort(SqList &S){//½øĞĞÅÅĞò 
+void SqListSort(SqList &S){//½øĞĞÅÅĞò 
 	int low=0,high=S.length-1;
 	Word *array[S.length];
 	for(int i=0;i<S.length;i++){
@@ -140,35 +230,22 @@ void ListSort(SqList &S){//½øĞĞÅÅĞò
 	}
 	QSort(array,low,high);	//¼ÓÈëÅÅĞòËã·¨
 }
-void ListDispFile(SqList S){//Êä³öÎÄ¼şµ½¶ÔÓ¦µÄÎÄ¼şÖĞ  
+void DispFileSqList(SqList S){//Êä³öÎÄ¼şµ½¶ÔÓ¦µÄÎÄ¼şÖĞ  
 	FILE *Outfile;
 	Outfile=fopen("Outfile1.txt","w");
 	fprintf(Outfile,"%d\n",S.length);
 	char word;
-	for(int i=0;i<S.length;i++){
-		for(int j=0;word=S.elem[i].field[j];j++)
-			fprintf(Outfile,"%c",word);
-		fprintf(Outfile,"  ");
-		fprintf(Outfile,"%d",S.elem[i].num);
-		fprintf(Outfile,"\n");
-	}
+	for(int i=0;i<S.length;i++)fprintf(Outfile,"%s  %d\n",S.elem[i].field,S.elem[i].num);
 	fclose(Outfile);
 }
-void LinkListDispFile(LinkList &L){//Êä³öÎÄ¼şµ½¶ÔÓ¦µÄÎÄ¼şÖĞ  
+void DispFileLinkList(LinkList &L){//Êä³öÎÄ¼şµ½¶ÔÓ¦µÄÎÄ¼şÖĞ  
 	FILE *Outfile;
 	Outfile=fopen("Outfile2.txt","w");
 	LinkList q=L->next;
 	int length;
 	for(length=0;q;q=q->next)length++;
 	fprintf(Outfile,"%d\n",length);
-	char word;
-	for(LinkList q=L->next;q;q=q->next){
-		for(int i=0;word=q->data.field[i];i++)
-			fprintf(Outfile,"%c",word);
-		fprintf(Outfile,"  ");
-		fprintf(Outfile,"%d",q->data.num);
-		fprintf(Outfile,"\n");
-	}
+	for(LinkList q=L->next;q;q=q->next)fprintf(Outfile,"%c  %d\n",q->data.field,q->data.num);
 	fclose(Outfile);
 }
 int HalfSearch(SqList &S,char *wordarray,int base,int top){//ÕÛ°ë²éÕÒ¹¦ÄÜÇø 
@@ -181,8 +258,8 @@ int HalfSearch(SqList &S,char *wordarray,int base,int top){//ÕÛ°ë²éÕÒ¹¦ÄÜÇø
 			else return HalfSearch(S,wordarray,base,Standard-1);//Èç¹û´óÓÚ0£¬ÔòËµÃ÷Standard´óÓÚwordarray£¬ÏòÇ°ÕÛ°ë²éÕÒ 
 	}
 }
-void HalfFindWord(SqList &S){	//ÕÛ°ë²éÕÒ 
-	char wordarray[WordMax];
+void FindWordHalf(SqList &S){	//ÕÛ°ë²éÕÒ 
+	char wordarray[WordMaxLength];
 	fflush(stdin);
 	printf("ÇëÊäÈë´ı²éÕÒµÄµ¥´Ê£º"); 
 	gets(wordarray);
@@ -194,16 +271,20 @@ void HalfFindWord(SqList &S){	//ÕÛ°ë²éÕÒ
 	int num;
 	num=HalfSearch(S,wordarray,0,S.length-1);
 	QueryPerformanceCounter(&time_end);//¼ÆÊ±½áÊø
-	if(num>0){
-		printf("´Ëµ¥´ÊµÄ×ÖÆµÎª£º%d\n",num);
-		printf("²éÕÒ¸Ãµ¥´ÊËù»¨µÄÊ±¼ä£º%lf\n",1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq);
-		printf("Æ½¾ù²éÕÒ³¤¶È£º%d\n",0); 
+	if(num){
+		FindSuccess(num,1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq,0);
 	}else{
 		printf("²éÕÒÊ§°Ü\n");
 	}
 }
-void LinkListFindWord(LinkList &L){//Á´±íË³Ğò²éÕÒ 
-	char wordarray[WordMax];
+int LinkListCount(LinkList &L){
+	LinkList q=L;
+	int n=0;
+	while(q=q->next)n++;
+		return n;
+}
+void FindWordLinkList(LinkList &L){//Á´±íË³Ğò²éÕÒ 
+	char wordarray[WordMaxLength];
 	fflush(stdin);
 	printf("ÇëÊäÈë´ı²éÕÒµÄµ¥´Ê£º"); 
 	gets(wordarray);
@@ -212,24 +293,20 @@ void LinkListFindWord(LinkList &L){//Á´±íË³Ğò²éÕÒ
 	QueryPerformanceFrequency(&f);
 	dqFreq=(double)f.QuadPart;
 	QueryPerformanceCounter(&time_start);//¼ÆÊ±¿ªÊ¼
-	int n=0;
 	LinkList p;
 	for(p=L->next;p;p=p->next){
-		n++;
 		if(!strcmp(p->data.field,wordarray))
 			break;
 	}
 	QueryPerformanceCounter(&time_end);//¼ÆÊ±½áÊø
 	if(p){
-		printf("´Ëµ¥´ÊµÄ×ÖÆµÎª£º%d\n",p->data.num);
-		printf("²éÕÒ¸Ãµ¥´ÊËù»¨µÄÊ±¼ä£º%lf\n",1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq);
-		printf("Æ½¾ù²éÕÒ³¤¶È£º%d\n",(n+1)/2); 
+		FindSuccess(p->data.num,1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq,(double)(LinkListCount(L)+1)/2);
 	}else{
 		printf("²éÕÒÊ§°Ü\n");
 	}
 }
-void ListFindWord(SqList &S){	//Ë³Ğò±íË³Ğò²éÕÒ 
-	char wordarray[WordMax];
+void FindWordSqList(SqList &S){	//Ë³Ğò±íË³Ğò²éÕÒ 
+	char wordarray[WordMaxLength];
 	fflush(stdin);
 	printf("ÇëÊäÈë´ı²éÕÒµÄµ¥´Ê£º"); 
 	gets(wordarray);
@@ -238,22 +315,19 @@ void ListFindWord(SqList &S){	//Ë³Ğò±íË³Ğò²éÕÒ
 	QueryPerformanceFrequency(&f);
 	dqFreq=(double)f.QuadPart;
 	QueryPerformanceCounter(&time_start);//¼ÆÊ±¿ªÊ¼
-	int n=0,i;
+	int i;
 	for(i=0;i<S.length;i++){
-		n++;
 		if(!strcmp(S.elem[i].field,wordarray))
 			break;
 	}
 	QueryPerformanceCounter(&time_end);//¼ÆÊ±½áÊø
 	if(i<S.length){
-		printf("´Ëµ¥´ÊµÄ×ÖÆµÎª£º%d\n",S.elem[i].num);
-		printf("²éÕÒ¸Ãµ¥´ÊËù»¨µÄÊ±¼ä£º%lf\n",1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq);
-		printf("Æ½¾ù²éÕÒ³¤¶È£º%d\n",(n+1)/2); 
+		FindSuccess(S.elem[i].num,1000000*(time_end.QuadPart-time_start.QuadPart)/dqFreq,(double)(S.length+1)/2);
 	}else{
 		printf("²éÕÒÊ§°Ü\n");
 	}
 }
-Status LinkListInsert(LinkList &L,char *wordarray,int length){//Ïòµ¥Á´±íÖĞ²åÈëÔªËØ,º¬Í·½Úµã£¬·½±ã½øĞĞ²Ù×÷ 
+void LinkListInsert(LinkList &L,char *wordarray,int length){//Ïòµ¥Á´±íÖĞ²åÈëÔªËØ,º¬Í·½Úµã£¬·½±ã½øĞĞ²Ù×÷ 
 	LinkList p=L->next,q=L;
 	while(p){
 		if(!strcmp(p->data.field,wordarray)){
@@ -271,7 +345,6 @@ Status LinkListInsert(LinkList &L,char *wordarray,int length){//Ïòµ¥Á´±íÖĞ²åÈëÔª
 		q->next=p;
 		p->next=NULL;
 	}
-	return OK;
 }
 void ReadFile(SqList &S,LinkList &L){//¶ÁÈ¡ÎÄ¼ş£¬²¢·Ö½â³Éµ¥´Ê ,½øÈëµ½²»Í¬µÄÊı¾İ´æ´¢½á¹¹ÖĞ 
 	FILE *Infile;
@@ -279,7 +352,7 @@ void ReadFile(SqList &S,LinkList &L){//¶ÁÈ¡ÎÄ¼ş£¬²¢·Ö½â³Éµ¥´Ê ,½øÈëµ½²»Í¬µÄÊı¾İ´
 		printf("Failed to read file!");
 		exit(1);
 	}
-	char wordarray[WordMax],word; 
+	char wordarray[WordMaxLength],word; 
 	int length;
 	while((word=fgetc(Infile))!=EOF){//½«Ó¢ÎÄµ¥´Ê´ÓÎÄ¶ÎÖĞ²ğ³ö 
 		for(length=0;word!=EOF;word=fgetc(Infile)){	
@@ -293,22 +366,25 @@ void ReadFile(SqList &S,LinkList &L){//¶ÁÈ¡ÎÄ¼ş£¬²¢·Ö½â³Éµ¥´Ê ,½øÈëµ½²»Í¬µÄÊı¾İ´
 				else wordarray[length++]=word;
 		}
 		wordarray[length]='\0';
-		ListInsert(S,wordarray,length);//½øÈëµ½Ë³Ğò±íÖĞ 
+		SqListInsert(S,wordarray,length);//½øÈëµ½Ë³Ğò±íÖĞ 
 		LinkListInsert(L,wordarray,length);//½øÈëµ½Á´±íÖĞ 
 	}//ÔÚReadFileÊ±£¬²ÉÓÃµÄÊÇ¶¨³¤¶ÁÈ¡µÄ·½Ê½£¬Ô­ÓĞµÄwordarrayÖĞº¬ÓĞÆäËûÀ¬»ø×ÖÄ¸£¬ÔÚÉú³É filedÊı×éÊ±ÊÇ±ä³¤µÄ,ËùÒÔĞèÒªÊäÈëlength±äÁ¿ÒÔÊµÏÖ±ä³¤Éú³É 
-	ListSort(S);//Ë³Ğò±íÅÅĞò
+	SqListSort(S);//Ë³Ğò±íÅÅĞò
 	SimpleSort(L);//Á´±íÅÅĞò 
 	fclose(Infile);
 }
+void Menu(char *name,char *option1,char *option2){
+	printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n");
+	printf("   ------%s------\n\n",name);
+	printf("1.%s\n",option1);
+	printf("2.%s\n",option2);
+	printf("3.·µ»ØÉÏÒ»¼¶\n");
+	printf("Çë°´ÏàÓ¦Êı×Ö¼ü½øĞĞÑ¡Ôñ ");
+} 
 void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥ 
 	int x; 
 	while(1){
-		printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n");
-		printf("   ------»ùÓÚÏßĞÔ±íµÄ²éÕÒ------\n\n");
-		printf("1.Ë³Ğò²éÕÒ\n");
-		printf("2.ÕÛ°ë²éÕÒ\n");
-		printf("3.·µ»ØÉÏÒ»¼¶\n");
-		printf("Çë°´ÏàÓ¦Êı×Ö¼ü½øĞĞÑ¡Ôñ ");
+		Menu("»ùÓÚÏßĞÔ±íµÄ²éÕÒ","Ë³Ğò²éÕÒ","ÕÛ°ë²éÕÒ"); 
 		scanf("%d",&x);
 		if(x==3){
 			system("cls");
@@ -317,12 +393,7 @@ void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥
 		else switch(x){
 			case 1:system("cls");
 				while(1){
-					printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n");
-					printf("   ------Ë³Ğò²éÕÒ------\n\n");
-					printf("1.»ùÓÚË³Ğò±íµÄË³Ğò²éÕÒ\n");
-					printf("2.»ùÓÚÁ´±íµÄ²éÕÒ\n");
-					printf("3.·µ»ØÉÏÒ»¼¶\n");
-					printf("Çë°´ÏàÓ¦Êı×Ö¼ü½øĞĞÑ¡Ôñ ");
+					Menu("»ùÓÚË³Ğò±íµÄ²éÕÒ","»ùÓÚË³Ğò±íµÄË³Ğò²éÕÒ","»ùÓÚÁ´±íµÄ²éÕÒ"); 
 					scanf("%d",&x);
 					if(x==3){
 						system("cls");
@@ -331,12 +402,7 @@ void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥
 					else switch(x){
 						case 1:system("cls");
 							while(1){ 
-								printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n");
-								printf("   ------»ùÓÚË³Ğò±íµÄË³Ğò²éÕÒ------\n\n");
-								printf("1.´ÊÆµÍ³¼Æ\n");
-								printf("2.µ¥´Ê²éÕÒ\n");
-								printf("3.·µ»ØÉÏÒ»¼¶\n");
-								printf("Çë°´ÏàÓ¦Êı×Ö¼ü½øĞĞÑ¡Ôñ ");
+								Menu("»ùÓÚË³Ğò±íµÄË³Ğò²éÕÒ","´ÊÆµÍ³¼Æ","µ¥´Ê²éÕÒ");
 								scanf("%d",&x);
 								if(x==3){
 									system("cls");
@@ -344,13 +410,13 @@ void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥
 								}	
 								else switch(x){
 									case 1:
-										ListDispFile(S);//Êä³ö 
+										DispFileSqList(S);//Êä³ö 
 										printf("´ÊÆµÍ³¼Æ³É¹¦£¡ÒÑµ¼³öÖÁOutfile1.txtÎÄ¼şÖĞ£¡\n"); 
 										fflush(stdin);
 										if(getchar())system("cls");
 										break;
 									case 2:
-										ListFindWord(S);//²éÕÒ 
+										FindWordSqList(S);//²éÕÒ 
 										fflush(stdin);
 										if(getchar())system("cls");
 										break;
@@ -360,12 +426,7 @@ void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥
 							break;
 						case 2:system("cls");
 							while(1){ 
-								printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n");
-								printf("   ------»ùÓÚÁ´±íµÄË³Ğò²éÕÒ------\n\n");
-								printf("1.´ÊÆµÍ³¼Æ\n");
-								printf("2.µ¥´Ê²éÕÒ\n");
-								printf("3.·µ»ØÉÏÒ»¼¶\n");
-								printf("Çë°´ÏàÓ¦Êı×Ö¼ü½øĞĞÑ¡Ôñ ");
+								Menu("»ùÓÚÁ´±íµÄË³Ğò²éÕÒ","´ÊÆµÍ³¼Æ","µ¥´Ê²éÕÒ");
 								scanf("%d",&x);
 								if(x==3){
 									system("cls");
@@ -373,44 +434,38 @@ void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥
 								}	
 								else switch(x){
 									case 1:
-										LinkListDispFile(L);//Êä³ö 
+										DispFileLinkList(L);//Êä³ö 
 										printf("´ÊÆµÍ³¼Æ³É¹¦£¡ÒÑµ¼³öÖÁOutfile2.txtÎÄ¼şÖĞ£¡\n"); 
 										fflush(stdin);
 										if(getchar())system("cls");
 										break;
 									case 2:
-										LinkListFindWord(L);//²éÕÒ 
+										FindWordLinkList(L);//²éÕÒ 
 										fflush(stdin);
 										if(getchar())system("cls");
 										break;
 								}
-								
 							}
 					} 
 				}
 				break;
 			case 2:system("cls");
 				while(1){
-					printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n");
-					printf("   ------ÕÛ°ë²éÕÒ------\n\n");
-					printf("1.´ÊÆµÍ³¼Æ\n");
-					printf("2.µ¥´Ê²éÕÒ\n");
-					printf("3.·µ»ØÉÏÒ»¼¶\n");
-					printf("Çë°´ÏàÓ¦Êı×Ö¼ü½øĞĞÑ¡Ôñ ");
+					Menu("ÕÛ°ë²éÕÒ","´ÊÆµÍ³¼Æ","µ¥´Ê²éÕÒ");
 					scanf("%d",&x);
 					if(x==3){
 						system("cls");
 						break;
 					}
 					else switch(x){
-						case 1:system("cls");
-							ListDispFile(S);//Êä³ö 
+						case 1:
+							DispFileSqList(S);//Êä³ö 
 							printf("´ÊÆµÍ³¼Æ³É¹¦£¡ÒÑµ¼³öÖÁOutfile3.txtÎÄ¼şÖĞ£¡\n"); 
 							fflush(stdin);
 							if(getchar())system("cls");
 								break;
 						case 2:
-							HalfFindWord(S);//²éÕÒ 
+							FindWordHalf(S);//²éÕÒ 
 							fflush(stdin);
 							if(getchar())system("cls");
 								break;
@@ -419,11 +474,96 @@ void Linearlist(SqList &S,LinkList &L){//»ùÓÚÏßĞÔ±íµÄ²éÕÒ²Ëµ¥
 		} 
 	}
 }
+void BinarySortTree(BiTree &T){
+	int x;
+	while(1){ 
+		Menu("»ùÓÚ¶ş²æÅÅĞòÊ÷µÄ²éÕÒ","´ÊÆµÍ³¼Æ","µ¥´Ê²éÕÒ");
+		scanf("%d",&x);
+		if(x==3){
+			system("cls");
+			break;
+		}	
+		else switch(x){
+			case 1:
+				DispFileBiTree(T);//Êä³ö 
+				printf("´ÊÆµÍ³¼Æ³É¹¦£¡ÒÑµ¼³öÖÁOutfile4.txtÎÄ¼şÖĞ£¡\n"); 
+				fflush(stdin);
+				if(getchar())system("cls");
+					break;
+			case 2:
+				FindWordBiTree(T);//²éÕÒ 
+				fflush(stdin);
+				if(getchar())system("cls");
+				break;
+		}							
+	}
+}
+void Hashtable(){
+	int x;
+	while(1){ 
+		Menu("»ùÓÚ¹şÏ£±íµÄ²éÕÒ","»ùÓÚ¿ª·ÅµØÖ··¨µÄ¹şÏ£²éÕÒ","»ùÓÚÁ´µØÖ··¨µÄ¹şÏ£²éÕÒ");
+		scanf("%d",&x);
+		if(x==3){
+			system("cls");
+			break;
+		}	
+		else switch(x){
+			case 1:
+				while(1){ 
+					Menu("»ùÓÚ¿ª·ÅµØÖ··¨µÄ¹şÏ£²éÕÒ","´ÊÆµÍ³¼Æ","µ¥´Ê²éÕÒ");
+					scanf("%d",&x);
+					if(x==3){
+						system("cls");
+						break;
+					}	
+					else switch(x){
+						case 1:
+								//Êä³ö 
+							printf("´ÊÆµÍ³¼Æ³É¹¦£¡ÒÑµ¼³öÖÁOutfile5.txtÎÄ¼şÖĞ£¡\n"); 
+							fflush(stdin);
+							if(getchar())system("cls");
+						break;
+						case 2:
+								//²éÕÒ 
+							fflush(stdin);
+							if(getchar())system("cls");
+						break;
+					}							
+				}
+				break;
+			case 2:
+				while(1){ 
+					Menu("»ùÓÚÁ´µØÖ··¨µÄ¹şÏ£²éÕÒ","´ÊÆµÍ³¼Æ","µ¥´Ê²éÕÒ");
+					scanf("%d",&x);
+					if(x==3){
+						system("cls");
+						break;
+					}	
+					else switch(x){
+						case 1:
+								//Êä³ö 
+							printf("´ÊÆµÍ³¼Æ³É¹¦£¡ÒÑµ¼³öÖÁOutfile6.txtÎÄ¼şÖĞ£¡\n"); 
+							fflush(stdin);
+							if(getchar())system("cls");
+						break;
+						case 2:
+								//²éÕÒ 
+							fflush(stdin);
+							if(getchar())system("cls");
+						break;
+					}							
+				}
+				break;
+		}							
+	}
+}
 int main(){
 	int x;
-	SqList S;InitList(S);
+	SqList S;InitSqList(S);
 	LinkList L;InitLinkList(L);
 	ReadFile(S,L);
+	BiTree T;InitBiTree(S,T);
+
 	while(1){
 		printf("    /****»ùÓÚ²»Í¬²ßÂÔµÄµ¥´ÊÍ³¼ÆºÍ¼ìË÷ÏµÍ³****/\n\n\n");
 		printf("1.»ùÓÚÏßĞÔ±íµÄ²éÕÒ\n");
@@ -434,11 +574,12 @@ int main(){
 		scanf("%d",&x);
 		if(x==4)break;
 		else switch(x){
-			case 1:system("cls");Linearlist(S,L);break;
-			case 2:system("cls");break;
-			case 3:system("cls");break;
+			case 1:system("cls");Linearlist(S,L);break;//ÏßĞÔ±í 
+			case 2:system("cls");BinarySortTree(T);break;//¶ş²æÅÅĞòÊ÷ 
+			case 3:system("cls");break;//¹şÏ£±í 
 		} 	
 	}
-	DestroyList(S);
+	DestroySqList(S);
 	DestroyLinkList(L);
+	DestoryBiTree(T); 
 } 
